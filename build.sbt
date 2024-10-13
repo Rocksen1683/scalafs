@@ -8,7 +8,18 @@ ThisBuild / organizationName := "example"
 lazy val root = (project in file("."))
   .settings(
     name := "scalafs",
-    libraryDependencies += munit % Test
-  )
 
-// See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.
+    //porting dependenices from Dependencies.scala
+    libraryDependencies ++= Seq(
+      akkaActorTyped,
+      akkaStream,
+      akkaHttp,
+      akkaTestKit,
+      zookeeper,
+      logback,
+      scalaTest,
+      munit 
+    ),
+
+    logLevel := Level.Info
+  )
