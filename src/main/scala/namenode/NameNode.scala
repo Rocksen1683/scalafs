@@ -7,7 +7,6 @@ import scala.concurrent.duration._
 import scala.io.StdIn
 
 // Case classes for message passing between actors
-case class CreateFile(fileName: String, fileSize: Long)
 case class DeleteFile(fileName: String)
 case class GetFileBlocks(fileName: String)
 case class BlockLocation(blockId: String, dataNodeIds: List[String])
