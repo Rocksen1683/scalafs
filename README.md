@@ -17,7 +17,7 @@ To set up and run `ScalaFS` locally, you need the following:
 1. **Clone the Repository**  
    First, clone the repository to your local machine:
    ```bash
-   git clone https://github.com/yourusername/scalafs.git
+   git clone https://github.com/Rocksen1683/scalafs.git
    cd scalafs
    ```
 2. **Running the Project**
