@@ -6,3 +6,4 @@ case class DataNodeHeartbeat(dataNodeId: String)
 case class CreateFile(fileName: String, fileSize: Long)
 case class BlockLocation(blockId: String, var dataNodeIds: List[String])
 case class ReadBlock(blockId: String)
+case object RegisterDataNode
