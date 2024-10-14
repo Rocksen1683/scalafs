@@ -20,10 +20,11 @@ object FileMetadata {
 //message passing between actors
 case class DeleteFile(fileName: String)
 case class GetFileBlocks(fileName: String)
+case object GetDataNodes
 case object CheckDataNodeFailures
 case class DataNodeFailure(dataNodeId: String)
 
-class NameNode extends Actor {
+class NameNode(disableMetadata: Boolean = false, replicationFactor: Int=3) extends Actor {
   
     //Metadata: File name -> List of block locations
     private val fileMetadata: mutable.Map[String, List[BlockLocation]] = mutable.Map()
@@ -39,18 +40,19 @@ class NameNode extends Actor {
 
     override def preStart(): Unit = {
         //loadign metadata from disk
-        loadMetadata()
+        if (!disableMetadata){
+            loadMetadata()
+        }
         checkFailureTask = Some(context.system.scheduler.scheduleWithFixedDelay(0.seconds, 5.seconds, self, CheckDataNodeFailures))
     }
 
     override def postStop(): Unit = {
         //storoing metadata on disk post stop
-        saveMetadata()
+        if (!disableMetadata){
+            saveMetadata()
+        }
         checkFailureTask.foreach(_.cancel())
     }
-
-    //replication factor -> number of blocks that will replicate data
-    val replicationFactor = 3
 
     // Incoming messages
     def receive: Receive = {
@@ -77,6 +79,9 @@ class NameNode extends Actor {
     case GetFileBlocks(fileName) =>
         println(s"Fetching blocks for file: $fileName")
         sender() ! fileMetadata.get(fileName).getOrElse(List())
+
+    case GetDataNodes => 
+      sender() ! dataNodes.keys.toList
 
     case DataNodeHeartbeat(dataNodeId) =>
         println(s"Received heartbeat from DataNode: $dataNodeId")
