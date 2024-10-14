@@ -1,6 +1,9 @@
 # ScalaFS
 `ScalaFS` is a fault-tolerant distributed file system written in Scala, designed to efficiently store and manage large-scale data across multiple nodes. The system leverages a `NameNode` for metadata management and `DataNodes` to handle the actual storage and replication of data blocks. It ensures reliability and fault tolerance through block replication and `DataNode` failure handling.
 
+## Architecture
+![ScalaFS Architecture](docs/architecture.png)
+
 ## Currently Supported by ScalaFS
 
 ### `NameNode` Structure 
@@ -27,6 +30,3 @@ To ensure the system’s resilience, the `NameNode` now supports persistent meta
 - **Efficient File Transfer and Chunking**: Implementing optimizations for transferring large files efficiently across `DataNodes`
 - **Data Consistency Model**: Defining and implementing a consistency model (e.g., strong or eventual consistency) for file operations
 - **Quorum-based Block Replication Policy**: Implementing a quorum-based replication system to ensure data integrity and availability across multiple `DataNodes`
-
-## ScalaFS Architecture Diagram
-In Progress
