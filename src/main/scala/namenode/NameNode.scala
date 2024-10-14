@@ -1,31 +1,42 @@
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import scala.collection.mutable
 
-//message passing between actors
+// Case classes for message passing between actors
 case class CreateFile(fileName: String, fileSize: Long)
 case class DeleteFile(fileName: String)
 case class GetFileBlocks(fileName: String)
 case class DataNodeHeartbeat(dataNodeId: String)
-case class BlockLocation(blockId: String, dataNodeIds: List[String]) 
+case class BlockLocation(blockId: String, dataNodeIds: List[String])
+case class StoreBlock(blockId: String, data: Array[Byte])
 
 class NameNode extends Actor {
   
-  //Metadata: File name -> List of block locations (with replication)
+  // Metadata: File name -> List of block locations
   private val fileMetadata: mutable.Map[String, List[BlockLocation]] = mutable.Map()
 
-  //set of datanodes registered to this namenode
-  private val dataNodes: mutable.Set[String] = mutable.Set()
+  // Registered DataNodes
+  private val dataNodes: mutable.Map[String, ActorRef] = mutable.Map()
 
-  //replication factor: number of DataNodes each block should be stored on
+  // Replication factor
   val replicationFactor = 3
 
-  //receive incoming messages
+  // Incoming messages
   def receive: Receive = {
     case CreateFile(fileName, fileSize) =>
       println(s"Creating file: $fileName with size $fileSize")
       val blocks = allocateBlocks(fileName, fileSize)
       fileMetadata.put(fileName, blocks)
-      sender() ! blocks //send block locations back to client
+      
+      // Instruct DataNodes to store blocks
+      blocks.foreach { block =>
+        val blockData = Array.fill(128 * 1024 * 1024)(0.toByte) // Simulated block data
+        block.dataNodeIds.foreach { dataNodeId =>
+          val dataNodeRef = dataNodes(dataNodeId)
+          dataNodeRef ! StoreBlock(block.blockId, blockData)
+        }
+      }
+
+      sender() ! blocks // Send block locations back to client
     
     case DeleteFile(fileName) =>
       println(s"Deleting file: $fileName")
@@ -37,26 +48,28 @@ class NameNode extends Actor {
     
     case DataNodeHeartbeat(dataNodeId) =>
       println(s"Received heartbeat from DataNode: $dataNodeId")
-      dataNodes.add(dataNodeId)
+      if (!dataNodes.contains(dataNodeId)) {
+        // Register the DataNode if not already registered
+        dataNodes += (dataNodeId -> sender())
+      }
   }
 
-  //allocate blocks to DataNodes with replication
+  //Method to allocate blocks to DataNodes
   private def allocateBlocks(fileName: String, fileSize: Long): List[BlockLocation] = {
     val blockCount = Math.ceil(fileSize.toDouble / 128).toInt
     (1 to blockCount).map { i =>
       val blockId = s"$fileName-block-$i"
-      val dataNodeIds = pickDataNodes(replicationFactor) // Updated: Pick multiple DataNodes
+      val dataNodeIds = pickDataNodes(replicationFactor)
       BlockLocation(blockId, dataNodeIds)
     }.toList
   }
 
-  //pick multiple DataNodes for block replication
+  //Pick multiple DataNodes for block replication
   private def pickDataNodes(n: Int): List[String] = {
-    val dataNodeList = dataNodes.toList
+    val dataNodeList = dataNodes.keys.toList
     if (dataNodeList.size >= n) {
-      (currentDataNodeIndex until (currentDataNodeIndex + n)).map { index =>
-        val dataNode = dataNodeList(index % dataNodeList.size)
-        dataNode
+      (0 until n).map { i =>
+        dataNodeList((i + currentDataNodeIndex) % dataNodeList.size)
       }.toList
     } else {
       throw new Exception("Not enough DataNodes available for replication")
@@ -66,11 +79,7 @@ class NameNode extends Actor {
   private var currentDataNodeIndex = 0
 }
 
-
 object NameNodeApp extends App {
   val system: ActorSystem = ActorSystem("DistributedFileSystem")
   val nameNode: ActorRef = system.actorOf(Props[NameNode], "NameNode")
-
-  //example file creaton
-  nameNode ! CreateFile("example.txt", 256) // Create a 256MB file
 }
