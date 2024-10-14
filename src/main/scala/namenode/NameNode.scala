@@ -52,7 +52,6 @@ class NameNode extends Actor {
     case DataNodeHeartbeat(dataNodeId) =>
       println(s"Received heartbeat from DataNode: $dataNodeId")
       if (!dataNodes.contains(dataNodeId)) {
-        // Register the DataNode if not already registered
         dataNodes += (dataNodeId -> sender())
       }
   }

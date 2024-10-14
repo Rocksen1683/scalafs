@@ -3,7 +3,7 @@ import common._
 import scala.collection.mutable
 import scala.concurrent.duration._
 
-// Case classes for message passing
+// Case classes for message     
 case object SendHeartbeat
 case object RegisterDataNode
 
