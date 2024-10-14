@@ -2,10 +2,20 @@ package namenode
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable, Props}
 import common._ 
+import java.io.{File, PrintWriter}
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.io.StdIn
+import scala.io.{BufferedSource, Source, StdIn}
+import play.api.libs.json._ 
+
+//classes for persistent metadata storage
+case class FileMetadata(fileName: String, blocks: List[BlockLocation])
+
+object FileMetadata {
+  implicit val blockLocationFormat: Format[BlockLocation] = Json.format[BlockLocation]
+  implicit val fileMetadataFormat: Format[FileMetadata] = Json.format[FileMetadata]
+}
 
 //message passing between actors
 case class DeleteFile(fileName: String)
@@ -23,12 +33,20 @@ class NameNode extends Actor {
 
     private var checkFailureTask: Option[Cancellable] = None
 
+    //metadata file path
+    private val metadataFilePath = "data/namenode_metadata.json"
+
+
     override def preStart(): Unit = {
-    checkFailureTask = Some(context.system.scheduler.scheduleWithFixedDelay(0.seconds, 5.seconds, self, CheckDataNodeFailures))
+        //loadign metadata from disk
+        loadMetadata()
+        checkFailureTask = Some(context.system.scheduler.scheduleWithFixedDelay(0.seconds, 5.seconds, self, CheckDataNodeFailures))
     }
 
     override def postStop(): Unit = {
-    checkFailureTask.foreach(_.cancel())
+        //storoing metadata on disk post stop
+        saveMetadata()
+        checkFailureTask.foreach(_.cancel())
     }
 
     //replication factor -> number of blocks that will replicate data
@@ -127,6 +145,37 @@ class NameNode extends Actor {
     }
 
     private var currentDataNodeIndex = 0
+
+    //saving metadata to disk
+    private def saveMetadata(): Unit = {
+        val metadataList = fileMetadata.map { case (fileName, blocks) =>
+            FileMetadata(fileName, blocks)
+        }.toList
+
+        val json = Json.toJson(metadataList).toString()
+        val writer = new PrintWriter(new File(metadataFilePath))
+        writer.write(json)
+        writer.close()
+        println(s"Metadata saved to $metadataFilePath")
+    }
+
+    //loading metadata from disk
+    private def loadMetadata(): Unit = {
+        val file = new File(metadataFilePath)
+        if (file.exists()) {
+            val source: BufferedSource = Source.fromFile(file)
+            val json = try source.mkString finally source.close()
+            val metadataList = Json.parse(json).as[List[FileMetadata]]
+
+            // Load metadata into the in-memory map
+            metadataList.foreach {fileMetadataObj =>
+            fileMetadata.put(fileMetadataObj.fileName, fileMetadataObj.blocks)
+            }
+            println(s"Metadata loaded from $metadataFilePath")
+        } else {
+            println(s"No metadata file found at $metadataFilePath. Starting fresh.")
+        }
+    }
 }
 
 object NameNodeApp extends App {
