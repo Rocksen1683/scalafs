@@ -7,6 +7,9 @@ object Dependencies {
   lazy val akkaHttp = "com.typesafe.akka" %% "akka-http" % "10.2.9"
   lazy val akkaTestKit = "com.typesafe.akka" %% "akka-testkit" % "2.6.19" % Test
 
+  //JSON serialization 
+  lazy val playJSON = "com.typesafe.play" %% "play-json" % "2.9.2"
+
   //ZooKeeper for coordination and failover
   lazy val zookeeper = "org.apache.zookeeper" % "zookeeper" % "3.6.3"
 

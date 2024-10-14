@@ -15,10 +15,11 @@ lazy val root = (project in file("."))
       akkaStream,
       akkaHttp,
       akkaTestKit,
-      zookeeper,
+      munit,
       logback,
+      playJSON,
       scalaTest,
-      munit 
+      zookeeper,
     ),
 
     logLevel := Level.Info
