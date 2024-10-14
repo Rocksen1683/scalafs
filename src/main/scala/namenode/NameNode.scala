@@ -1,13 +1,16 @@
+package namenode
+
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import common._ 
 import scala.collection.mutable
+import scala.concurrent.duration._
+import scala.io.StdIn
 
 // Case classes for message passing between actors
 case class CreateFile(fileName: String, fileSize: Long)
 case class DeleteFile(fileName: String)
 case class GetFileBlocks(fileName: String)
-case class DataNodeHeartbeat(dataNodeId: String)
 case class BlockLocation(blockId: String, dataNodeIds: List[String])
-case class StoreBlock(blockId: String, data: Array[Byte])
 
 class NameNode extends Actor {
   
@@ -82,4 +85,9 @@ class NameNode extends Actor {
 object NameNodeApp extends App {
   val system: ActorSystem = ActorSystem("DistributedFileSystem")
   val nameNode: ActorRef = system.actorOf(Props[NameNode], "NameNode")
+
+  // Simulate creating a file after some delay
+  system.scheduler.scheduleOnce(5.seconds) {
+    nameNode ! CreateFile("example.txt", 512) // Create a 512MB file
+  }(system.dispatcher)
 }

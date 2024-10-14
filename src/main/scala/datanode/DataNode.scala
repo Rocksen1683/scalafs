@@ -1,9 +1,9 @@
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import common._ 
 import scala.collection.mutable
 import scala.concurrent.duration._
 
 // Case classes for message passing
-case class StoreBlock(blockId: String, data: Array[Byte])
 case object SendHeartbeat
 case object RegisterDataNode
 
